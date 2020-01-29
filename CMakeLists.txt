@@ -9,6 +9,7 @@ file(GLOB SOURCE_FILES
         "main.cpp"
         "FileManager.cpp"
         "OsuManager.cpp"
+        "ConfigManager.cpp"
         )
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 

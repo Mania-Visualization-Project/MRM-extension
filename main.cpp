@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include "OsuManager.hpp"
 #include "FileManager.hpp"
+#include "ConfigManager.hpp"
 
 using namespace std;
 
@@ -101,10 +102,12 @@ void *process(void *) {
     }
 
     // 5. invoke render!
-    // TODO: speed
     stringstream command;
-    command << "java -jar -Djava.library.path=library " << RENDER_PATH << " \"" << beatmap_file << "\" \"" << replay_file
-            << "\"";
+    command << "java -jar -Djava.library.path=library " << RENDER_PATH
+            << " -speed=" << ConfigManager::get(KEY_SPEED)
+            << " \"" << beatmap_file << "\""
+            << " \"" << replay_file << "\"";
+
     system(command.str().c_str());
     return nullptr;
 }
@@ -120,6 +123,10 @@ int main(int argc, char *argv[]) {
     if (base_path) {
         cout << "Find osu base path: " << base_path << endl;
     }
+
+    ConfigManager::initialize_config();
+    cout << "Use speed = " << ConfigManager::get(KEY_SPEED) << ". You can change this speed in "
+         << CONFIG_FILE_NAME << "." << endl;
 
     if (RegisterHotKey(nullptr, 1, 0, VK_F1)) {
         cout << "Press F1 in Osu!Mania rating interface." << endl;
