@@ -3,7 +3,7 @@ set(PROJECT_NAME MRM-extension)
 project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -static")
 
 file(GLOB SOURCE_FILES
         "main.cpp"

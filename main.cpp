@@ -103,7 +103,7 @@ void *process(void *) {
 
     // 5. invoke render!
     stringstream command;
-    command << "java -jar -Djava.library.path=library " << RENDER_PATH
+    command << "java -jar -Djava.library.path=C:\\Windows\\System32;library " << RENDER_PATH
             << " -speed=" << ConfigManager::get(KEY_SPEED)
             << " \"" << beatmap_file << "\""
             << " \"" << replay_file << "\"";
