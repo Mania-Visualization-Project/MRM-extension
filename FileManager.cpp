@@ -67,6 +67,12 @@ namespace FileManager {
         }
     }
 
+    void create_folder(const char *name) {
+        if (!exist(name)) {
+            _mkdir(name);
+        }
+    }
+
     bool exist(const char *file_name) {
         return _access(file_name, F_OK) != -1;
     }

@@ -20,6 +20,8 @@ namespace FileManager {
     void get_name(const char *full_name, char *buff);
 
     bool exist(const char *file_name);
+
+    void create_folder(const char *name);
 }
 
 #endif

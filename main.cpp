@@ -2,12 +2,15 @@
 #include <iostream>
 #include <set>
 #include <pthread.h>
+#include <fstream>
+#include <tchar.h>
 #include "OsuManager.hpp"
 #include "FileManager.hpp"
 #include "ConfigManager.hpp"
 
 using namespace std;
 
+const char *RENDER_NAME = "ManiaReplayMaster.jar";
 const char *RENDER_PATH = "library\\ManiaReplayMaster.jar";
 
 void send_key(char key) {
@@ -59,6 +62,27 @@ bool find_beatmap(const std::regex &regex, char *beatmap_name) {
     return *beatmap_name != '\0';
 }
 
+void shell_execute_blocking(const char *command) {
+    SHELLEXECUTEINFO si;
+    ZeroMemory(&si, sizeof(si));
+    si.cbSize = sizeof(si);
+    si.fMask = SEE_MASK_NOCLOSEPROCESS;
+    si.lpVerb = _T("open");
+    si.lpFile = _T(command);
+    si.nShow = SW_SHOWNORMAL;
+
+    ShellExecuteEx(&si);
+
+    DWORD dwExitCode;
+    GetExitCodeProcess(si.hProcess, &dwExitCode);
+    while (dwExitCode == STILL_ACTIVE) {
+        Sleep((DWORD) 200);
+        GetExitCodeProcess(si.hProcess, &dwExitCode);
+    }
+
+    CloseHandle(si.hProcess);
+}
+
 void *process(void *) {
     // 0. check if osu exists
     if (!Osu::get_osu_base_path()) {
@@ -102,13 +126,21 @@ void *process(void *) {
     }
 
     // 5. invoke render!
+    char bat_name[1024] = ".\\batch\\";
+    FileManager::create_folder("batch");
+    FileManager::get_name(beatmap_file, bat_name + strlen(bat_name));
+    strcpy(bat_name + strlen(bat_name) - 3, "bat");
     stringstream command;
-    command << "java -jar -Djava.library.path=C:\\Windows\\System32;library " << RENDER_PATH
+    command << "@echo off\ncd .\\library\njava -jar " << RENDER_NAME
             << " -speed=" << ConfigManager::get(KEY_SPEED)
             << " \"" << beatmap_file << "\""
-            << " \"" << replay_file << "\"";
-
-    system(command.str().c_str());
+            << " \"" << replay_file << "\""
+            << "\npause";
+    ofstream batch(bat_name);
+    batch << command.str();
+    batch.close();
+    shell_execute_blocking(bat_name);
+    remove(bat_name);
     return nullptr;
 }
 
