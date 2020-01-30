@@ -24,4 +24,4 @@ namespace FileManager {
     void create_folder(const char *name);
 }
 
-#endif
+#endif //_FILE_MANAGER_HPP_

@@ -7,18 +7,12 @@
 #include "OsuManager.hpp"
 #include "FileManager.hpp"
 #include "ConfigManager.hpp"
+#include "WindowsManager.hpp"
 
 using namespace std;
 
 const char *RENDER_NAME = "ManiaReplayMaster.jar";
 const char *RENDER_PATH = "library\\ManiaReplayMaster.jar";
-
-void send_key(char key) {
-    int scanCode = MapVirtualKey(key, 0);
-    keybd_event(key, scanCode, 0, 0);
-    Sleep(100);
-    keybd_event(key, scanCode, KEYEVENTF_KEYUP, 0);
-}
 
 void get_replays(set<string> &set) {
     FileManager::walk_dir(Osu::get_osu_replay_path(),
@@ -62,31 +56,10 @@ bool find_beatmap(const std::regex &regex, char *beatmap_name) {
     return *beatmap_name != '\0';
 }
 
-void shell_execute_blocking(const char *command) {
-    SHELLEXECUTEINFO si;
-    ZeroMemory(&si, sizeof(si));
-    si.cbSize = sizeof(si);
-    si.fMask = SEE_MASK_NOCLOSEPROCESS;
-    si.lpVerb = _T("open");
-    si.lpFile = _T(command);
-    si.nShow = SW_SHOWNORMAL;
-
-    ShellExecuteEx(&si);
-
-    DWORD dwExitCode;
-    GetExitCodeProcess(si.hProcess, &dwExitCode);
-    while (dwExitCode == STILL_ACTIVE) {
-        Sleep((DWORD) 200);
-        GetExitCodeProcess(si.hProcess, &dwExitCode);
-    }
-
-    CloseHandle(si.hProcess);
-}
-
 void *process(void *) {
     // 0. check if osu exists
     if (!Osu::get_osu_base_path()) {
-        cout << "Cannot find osu process. "
+        cerr << "Cannot find osu process. "
              << "Please open Osu!Mania rating interface before using this extension."
              << endl;
         return nullptr;
@@ -98,7 +71,7 @@ void *process(void *) {
 
     // 2. send F2 key to export replay.osr
     Sleep(500); // wait user for releasing shortcut key
-    send_key(VK_F2);
+    WindowsManager::send_key(VK_F2);
 
     // 3. find if there is a new replay fetched (timeout: 20 seconds)
     char replay_file[1024] = {0};
@@ -109,7 +82,7 @@ void *process(void *) {
         }
     }
     if (!*replay_file) {
-        cout << "Timeout: cannot find replay file!" << endl;
+        cerr << "Timeout: cannot find replay file!" << endl;
         return nullptr;
     }
     cout << "Find replay: " << replay_file << endl;
@@ -121,7 +94,9 @@ void *process(void *) {
     if (find_beatmap(regex, beatmap_file)) {
         cout << "Find beatmap: " << beatmap_file << endl;
     } else {
-        cout << "Cannot find beatmap file!" << endl;
+        cerr << "Cannot find beatmap file! "
+             << "Please use ManiaReplayMaster.bat to input file names manually."
+             << endl;
         return nullptr;
     }
 
@@ -139,18 +114,32 @@ void *process(void *) {
     ofstream batch(bat_name);
     batch << command.str();
     batch.close();
-    shell_execute_blocking(bat_name);
+    WindowsManager::execute_cmd_blocking(bat_name);
     remove(bat_name);
     return nullptr;
 }
 
+void pause_exit(int code) {
+    system("pause");
+    exit(code);
+}
+
 int main(int argc, char *argv[]) {
 
-    if (!FileManager::exist(RENDER_PATH)) {
-        cout << "Cannot find " << RENDER_PATH << ". Please copy this extension outside library.";
-        return -1;
+    // check java
+    char buf[BUF_SIZE];
+    if (WindowsManager::execute_cmd("java -version 2>&1", buf) != 0) {
+        cerr << "Cannot find Java. Please install Java 8 or latter version." << endl;
+        pause_exit(-1);
     }
 
+    // check render
+    if (!FileManager::exist(RENDER_PATH)) {
+        cerr << "Cannot find " << RENDER_PATH << ". Please copy this extension outside library dir." << endl;
+        pause_exit(-2);
+    }
+
+    // check osu
     auto base_path = Osu::get_osu_base_path();
     if (base_path) {
         cout << "Find osu base path: " << base_path << endl;
@@ -163,8 +152,8 @@ int main(int argc, char *argv[]) {
     if (RegisterHotKey(nullptr, 1, 0, VK_F1)) {
         cout << "Press F1 in Osu!Mania rating interface." << endl;
     } else {
-        cout << "Error in register hot key!" << endl;
-        return -1;
+        cerr << "Error in register hot key!" << endl;
+        pause_exit(-3);
     }
 
     MSG msg = {nullptr};

@@ -24,4 +24,4 @@ namespace Osu {
 
 
 
-#endif
+#endif //_OSU_MANAGER_HPP_

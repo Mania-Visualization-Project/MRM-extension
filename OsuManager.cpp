@@ -1,34 +1,16 @@
-#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include "OsuManager.hpp"
 #include "FileManager.hpp"
+#include "WindowsManager.hpp"
 
 #define IS_LINE_END(c) ((c) == '\r' || (c) == '\n')
-#define BUF_SIZE 1024
 
 namespace Osu {
 
     static char osu_path[BUF_SIZE] = {0};
     static char osu_replay_path[BUF_SIZE] = {0};
     static char osu_songs_path[BUF_SIZE] = {0};
-
-    static void execute_cmd(const char *cmd, char *result) {
-        char buf_ps[BUF_SIZE];
-        char ps[BUF_SIZE] = {0};
-        FILE *ptr;
-        strcpy(ps, cmd);
-        if ((ptr = popen(ps, "r")) != nullptr) {
-            while (fgets(buf_ps, BUF_SIZE, ptr) != nullptr) {
-                strcat(result, buf_ps);
-                if (strlen(result) > BUF_SIZE)
-                    break;
-            }
-            pclose(ptr);
-        } else {
-            std::cout << "Error in: " << cmd << std::endl;
-        }
-    }
 
     static void update_osu_path(const char *base_dir) {
         strcpy(osu_path, base_dir);
@@ -58,7 +40,7 @@ namespace Osu {
         }
         char buf[BUF_SIZE] = {0};
         char path_buf[BUF_SIZE] = {0};
-        execute_cmd("powershell \"get-process osu! | select-object path\"", buf);
+        WindowsManager::execute_cmd("powershell \"get-process osu! | select-object path\"", buf);
         /**
          * If process osu! exists, it will print "\nPath\n----[path]"
          * Otherwise, it will print "get-process :..."
